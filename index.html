@@ -3079,6 +3079,7 @@ function activatePro() {
   // update nav
   document.querySelector('.btn-sub-nav').textContent = '⚡ Pro Active';
   document.querySelector('.btn-sub-nav').style.background = 'var(--green)';
+  var fl=document.getElementById('fantasy-lock'); if(fl)fl.style.display='none';
   // update tier strip
   document.getElementById('tier-badge-free').style.display = 'none';
   document.getElementById('tier-badge-pro').style.display = 'inline-block';
@@ -3247,64 +3248,81 @@ function compute(t1, t2) {
 }
 
 function renderResult(res, t1, t2) {
+  currentResult = res;
   document.getElementById('result-panel').style.display='block';
   document.getElementById('r-t1').textContent=t1.toUpperCase();
   document.getElementById('r-t2').textContent=t2.toUpperCase();
   document.getElementById('r-p1').textContent=res.p1+'%';
   document.getElementById('r-p2').textContent=res.p2+'%';
 
-  setTimeout(()=>{
+  setTimeout(function(){
     document.getElementById('rbar1').style.width=res.p1+'%';
     document.getElementById('rbar2').style.width=res.p2+'%';
   },100);
 
-  if(res.draw>0) document.getElementById('r-draw').innerHTML=`Draw: <strong style="color:var(--text-dim)">${res.draw}%</strong>`;
+  if(res.draw>0) document.getElementById('r-draw').innerHTML='Draw: <strong style="color:var(--text-dim)">'+res.draw+'%</strong>';
 
   // Confidence ring
-  const circ=175.9;
-  const offset=circ-(circ*res.conf/100);
+  var circ=175.9, offset=circ-(circ*res.conf/100);
   document.getElementById('conf-num').textContent=res.conf+'%';
-  setTimeout(()=>{
+  setTimeout(function(){
     document.getElementById('conf-circle').style.transition='stroke-dashoffset 1.2s cubic-bezier(0.16,1,0.3,1)';
     document.getElementById('conf-circle').style.strokeDashoffset=offset;
   },100);
 
   // Breakdown
-  const grid=document.getElementById('breakdown-grid');
-  grid.innerHTML=res.bd.map(b=>`
-    <div class="bd-item">
-      <span class="bd-icon">${b.icon}</span>
-      <div class="bd-info">
-        <div class="bd-name">${b.name}</div>
-        <div class="bd-val ${b.f===1?'bd-blue':b.f===2?'bd-gold':'bd-muted'}">
-          ${b.f===1?'▲ '+t1:b.f===2?'▲ '+t2:'— Neutral'} · ${b.note}
-        </div>
-      </div>
-      <div class="bd-dot" style="background:${b.f===1?'var(--blue)':b.f===2?'var(--gold)':'var(--text-muted)'}"></div>
-    </div>`).join('');
+  var t1n=t1, t2n=t2;
+  var grid=document.getElementById('breakdown-grid');
+  grid.innerHTML=res.bd.map(function(b){
+    return '<div class="bd-item"><span class="bd-icon">'+b.icon+'</span><div class="bd-info"><div class="bd-name">'+b.name+'</div><div class="bd-val '+(b.f===1?'bd-blue':b.f===2?'bd-gold':'bd-muted')+'">'+(b.f===1?'▲ '+t1n:b.f===2?'▲ '+t2n:'— Neutral')+' · '+b.note+'</div></div><div class="bd-dot" style="background:'+(b.f===1?'var(--blue)':b.f===2?'var(--gold)':'var(--text-muted)')+'"></div></div>';
+  }).join('');
 
-  // Insight
-  const winner=res.p1>res.p2?t1:t2;
-  const margin=Math.abs(res.p1-res.p2);
-  const dom=margin>25?'clear frontrunners':margin>12?'moderate favourites':'slight favourites';
-  const keyFavors=res.bd.filter(b=>b.f===(res.p1>res.p2?1:2)).slice(0,3).map(b=>b.name.toLowerCase());
-  const wNote=weatherData?` Live weather at the venue shows <strong>${weatherData.condition}</strong> (${weatherData.temp}°C, humidity ${weatherData.humidity}%) — ${weatherData.humidity>75?'swing conditions could benefit the bowling attack':'favourable for stroke play'}.`:'';
-  const format=gs('format');
-  document.getElementById('insight-text').innerHTML=`
-    <strong>${winner}</strong> are the ${dom} with a predicted win probability of <strong>${res.p1>res.p2?res.p1:res.p2}%</strong>.
-    Their edge stems primarily from superior <strong>${keyFavors.join(', ')}</strong>.
-    ${wNote}
-    ${format==='test'?`A draw carries <strong>${res.draw}%</strong> probability in this Test encounter.`:''}
-    The prediction engine's confidence index stands at <strong>${res.conf}%</strong> based on ${res.bd.length} weighted parameters${weatherData?' including live weather data':''}.
-    ${margin<8?` This is an extremely close contest — <strong>${t1}</strong> and <strong>${t2}</strong> are evenly matched. Small factors like toss or early wickets could decide the outcome.`:''}
-  `;
+  // AI Insight
+  var winner=res.p1>res.p2?t1:t2;
+  var margin=Math.abs(res.p1-res.p2);
+  var dom=margin>25?'clear frontrunners':margin>12?'moderate favourites':'slight favourites';
+  var keyFavors=res.bd.filter(function(b){return b.f===(res.p1>res.p2?1:2);}).slice(0,3).map(function(b){return b.name.toLowerCase();});
+  var wNote=weatherData?(' Live weather shows <strong>'+weatherData.condition+'</strong> ('+weatherData.temp+'°C, humidity '+weatherData.humidity+'%) — '+(weatherData.humidity>75?'swing conditions benefit bowling':'favourable for batting')+'.'):'';
+  var format=document.getElementById('format').value;
+  document.getElementById('insight-text').innerHTML='<strong>'+winner+'</strong> are the '+dom+' with win probability of <strong>'+(res.p1>res.p2?res.p1:res.p2)+'%</strong>. Their edge stems from superior <strong>'+keyFavors.join(', ')+'</strong>.'+wNote+(format==='test'?' A draw carries <strong>'+res.draw+'%</strong> probability.':'')+(margin<8?' This is an extremely close contest — small factors like toss or early wickets could decide.':'');
+
+  // Team logos
+  var t1Logo=document.getElementById('r-t1-logo');
+  var t2Logo=document.getElementById('r-t2-logo');
+  var t1Color=document.getElementById('r-t1-color');
+  var t2Color=document.getElementById('r-t2-color');
+  if(t1Logo && selectedTeam1){t1Logo.textContent=selectedTeam1.logo; if(t1Color)t1Color.style.background='linear-gradient(90deg,'+selectedTeam1.c1+','+selectedTeam1.c2+')';}
+  if(t2Logo && selectedTeam2){t2Logo.textContent=selectedTeam2.logo; if(t2Color)t2Color.style.background='linear-gradient(90deg,'+selectedTeam2.c1+','+selectedTeam2.c2+')';}
+
+  // H2H
+  renderH2H(t1, t2, parseFloat(document.getElementById('h2h1').value)||0, parseFloat(document.getElementById('h2h2').value)||0);
+
+  // Graph
+  var gl1=document.getElementById('graph-t1-label'), gl2=document.getElementById('graph-t2-label');
+  if(gl1)gl1.textContent=t1; if(gl2)gl2.textContent=t2;
+  setTimeout(function(){simulateLive();}, 600);
+
+  // Phase projections
+  renderPowerplay(t1, t2, res);
+
+  // Fantasy XI
+  generateFantasyXI();
+  var fc=document.getElementById('fantasy-card'); if(fc)fc.style.display='block';
 
   // Batter analysis
   renderBatterAnalysis(t1, t2, res);
-  document.getElementById('batter-result').style.display='block';
+  var br=document.getElementById('batter-result'); if(br)br.style.display='block';
+
+  // Save to history
+  savePrediction(t1, t2, res.p1, res.p2, res.conf);
+
+  // Toast
+  showToast('\u26A1','<strong>Prediction complete!</strong><br>'+t1+' <b>'+res.p1+'%</b> vs '+t2+' <b>'+res.p2+'%</b>');
+  setTimeout(requestNotifications, 2500);
+
+  // Scroll to result
   document.getElementById('result-panel').scrollIntoView({behavior:'smooth',block:'start'});
 }
-
 function renderBatterAnalysis(t1, t2, res) {
   const container=document.getElementById('batter-analysis-content');
   let html='';
@@ -3935,24 +3953,6 @@ function filterTeams(n, val) {
   }
 }
 
-// ─── Override renderResult to show logos in result panel ───
-const _preLogoRenderResult = renderResult;
-function renderResult(res, t1, t2) {
-  _preLogoRenderResult(res, t1, t2);
-  // Set logos in result panel
-  const t1Logo = document.getElementById('r-t1-logo');
-  const t2Logo = document.getElementById('r-t2-logo');
-  const t1Color = document.getElementById('r-t1-color');
-  const t2Color = document.getElementById('r-t2-color');
-  if (t1Logo && selectedTeam1) {
-    t1Logo.textContent = selectedTeam1.logo;
-    if (t1Color) t1Color.style.background = `linear-gradient(90deg, ${selectedTeam1.c1}, ${selectedTeam1.c2})`;
-  }
-  if (t2Logo && selectedTeam2) {
-    t2Logo.textContent = selectedTeam2.logo;
-    if (t2Color) t2Color.style.background = `linear-gradient(90deg, ${selectedTeam2.c1}, ${selectedTeam2.c2})`;
-  }
-}
 
 // Initialize dropdowns on load
 renderDropdown(1, '');
@@ -4439,30 +4439,7 @@ Click OK to proceed (demo mode — wire Razorpay to charge real money).')) {
 </script>
 </body></html>');
   w.document.close();
-  showToast('\u{1F4C4}','<strong>PDF report ready!</strong><br>Print \u2192 Save as PDF to download');
-}
-// ═══ HOOK INTO renderResult ═══
-var _origRR=renderResult;
-function renderResult(res,t1,t2){
-  currentResult=res;
-  _origRR(res,t1,t2);
-  renderH2H(t1,t2,parseFloat(document.getElementById('h2h1').value)||0,parseFloat(document.getElementById('h2h2').value)||0);
-  var gl1=document.getElementById('graph-t1-label'),gl2=document.getElementById('graph-t2-label');
-  if(gl1)gl1.textContent=t1;if(gl2)gl2.textContent=t2;
-  setTimeout(function(){simulateLive();},600);
-  renderPowerplay(t1,t2,res);
-  generateFantasyXI();
-  var fc=document.getElementById('fantasy-card');if(fc)fc.style.display='block';
-  var br=document.getElementById('batter-result');if(br)br.style.display='block';
-  savePrediction(t1,t2,res.p1,res.p2,res.conf);
-  showToast('\u26A1','<strong>Prediction complete!</strong><br>'+t1+' <b>'+res.p1+'%</b> vs '+t2+' <b>'+res.p2+'%</b>');
-  setTimeout(requestNotifications,2500);
-}
-// Unlock Fantasy on Pro activation
-var _origAP=activatePro;
-function activatePro(){
-  _origAP();
-  var fl=document.getElementById('fantasy-lock');if(fl)fl.style.display='none';
+  showToast('\u{1F4C4}',' var fl=document.getElementById('fantasy-lock');if(fl)fl.style.display='none';
 }
 
 </script>
