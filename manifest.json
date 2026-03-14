@@ -1,0 +1,25 @@
+{
+  "name": "CricketIQ Pro",
+  "short_name": "CricketIQ",
+  "description": "AI-powered cricket match predictor with live weather, Fantasy XI and real-time win probability.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#05080f",
+  "theme_color": "#f0b429",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-IN",
+  "categories": ["sports", "entertainment"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Prediction",
+      "short_name": "Predict",
+      "url": "/index.html",
+      "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
+    }
+  ]
+}
